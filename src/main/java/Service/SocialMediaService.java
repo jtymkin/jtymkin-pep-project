@@ -20,10 +20,12 @@ public class SocialMediaService {
 
     public Account addUser(Account account)
     {
-        if(account.getPassword().length() > 4 && !account.getUsername().isEmpty()){
+        Account accounts = socialMediaDAO.addAccount(account);
+        if(account.getPassword().length() > 4 && !account.getUsername().isEmpty()
+            && socialMediaDAO.getAccountById(0) == null){
             socialMediaDAO.addAccount(account);
         }
-        return null;
+        return accounts;
     }
 
     public List<Message> getAllMessages() {
