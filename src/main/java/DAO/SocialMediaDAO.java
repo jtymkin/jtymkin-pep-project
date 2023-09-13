@@ -93,7 +93,33 @@ public class SocialMediaDAO {
         return null;
     }
 
+    public Account verifyUserCredentials(String username, String password) {
+        Connection connection = ConnectionUtil.getConnection();
+        try {
+            // Write SQL logic here
+            String sql = "SELECT * FROM account WHERE username = ?";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
     
+            // Write preparedStatement's setString method here
+            preparedStatement.setString(1, username);
+    
+            ResultSet rs = preparedStatement.executeQuery();
+            if (rs.next()) {
+                
+                String storedPassword = rs.getString("password");
+                
+                if (password.equals(storedPassword)) {
+                    Account account = new Account(rs.getInt("account_id"), rs.getString("username"), rs.getString("password"));
+                    return account;
+                }
+            }
+
+        }catch (SQLException e) {
+            System.out.println(e.getMessage());
+        } 
+        return null; 
+    }
+
 
     public List<Message> getAllMessages()
     {

@@ -81,9 +81,20 @@ public class SocialMediaController {
         
     }
 
-    private void verifyLogin(Context ctx)
+    private void verifyLogin(Context ctx) 
     {
+        Account account = ctx.bodyAsClass(Account.class);
 
+        // Assuming socialMediaService.authenticateUser is a method for user authentication
+        Account isAuthenticated = socialMediaService.verify(account.getUsername(), account.getPassword());
+        
+        if (isAuthenticated != null) {
+            // Authentication successful
+            ctx.json(account);
+        } else {
+            // Authentication failed
+            ctx.status(401);
+        }
     }
 
     private void createMessage(Context ctx)

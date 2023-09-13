@@ -28,6 +28,16 @@ public class SocialMediaService {
         return accounts;
     }
 
+    public Account getAccount(int account_id)
+    {
+        return socialMediaDAO.getAccountById(account_id);
+    }
+
+    public Account verify(String username, String password)
+    {
+        return socialMediaDAO.verifyUserCredentials(username, password);
+    }
+
     public List<Message> getAllMessages() {
         List<Message> messages = socialMediaDAO.getAllMessages();
         return messages;
