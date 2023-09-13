@@ -23,9 +23,9 @@ public class SocialMediaService {
         Account accounts = socialMediaDAO.addAccount(account);
         if(account.getPassword().length() > 4 && !account.getUsername().isEmpty()
             && socialMediaDAO.getAccountById(0) == null){
-            socialMediaDAO.addAccount(account);
+            return accounts;
         }
-        return accounts;
+        return null;
     }
 
     public Account getAccount(int account_id)
