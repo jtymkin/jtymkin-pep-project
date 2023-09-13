@@ -104,12 +104,16 @@ public class SocialMediaDAO {
             preparedStatement.setString(1, username);
     
             ResultSet rs = preparedStatement.executeQuery();
-            if (rs.next()) {
+            while (rs.next()) {
                 
                 String storedPassword = rs.getString("password");
+                int accountId = rs.getInt("account_id");
+                System.out.println("Username: " + username);
+                System.out.println("Stored Password: " + storedPassword);
+                System.out.println("Account ID: " + accountId);
                 
                 if (password.equals(storedPassword)) {
-                    Account account = new Account(rs.getInt("account_id"), rs.getString("username"), rs.getString("password"));
+                    Account account = new Account(accountId, rs.getString("username"), rs.getString("password"));
                     return account;
                 }
             }

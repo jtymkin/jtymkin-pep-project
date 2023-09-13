@@ -35,7 +35,12 @@ public class SocialMediaService {
 
     public Account verify(String username, String password)
     {
-        return socialMediaDAO.verifyUserCredentials(username, password);
+        System.out.println("Verifying user credentials for username: " + username + password);
+        Account verifiedAccount = socialMediaDAO.verifyUserCredentials(username, password);
+        Account verifAccount = socialMediaDAO.getAccountById(0);
+        System.out.println("Account ID: " + verifAccount);
+        System.out.println("Verification result: " + (verifiedAccount != null ? "Success" : "Failure"));
+        return verifiedAccount;
     }
 
     public List<Message> getAllMessages() {
