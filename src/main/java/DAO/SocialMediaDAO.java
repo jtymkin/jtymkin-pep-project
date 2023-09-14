@@ -93,7 +93,11 @@ public class SocialMediaDAO {
         return null;
     }
 
-    public Account verifyUserCredentials(String username, String password) {
+    public Account verifyUserCredentials(Account account) {
+        System.out.println("Account Object - Username: " + account.getUsername());
+        System.out.println("Account Object - Password: " + account.getPassword());
+        System.out.println("Account Object - Account ID: " + account.getAccount_id());
+    
         Connection connection = ConnectionUtil.getConnection();
         try {
             // Write SQL logic here
@@ -101,28 +105,67 @@ public class SocialMediaDAO {
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
     
             // Write preparedStatement's setString method here
-            preparedStatement.setString(1, username);
+            preparedStatement.setString(1, account.getUsername());
     
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
-                
+    
                 String storedPassword = rs.getString("password");
                 int accountId = rs.getInt("account_id");
-                System.out.println("Username: " + username);
-                System.out.println("Stored Password: " + storedPassword);
-                System.out.println("Account ID: " + accountId);
-                
-                if (password.equals(storedPassword)) {
-                    Account account = new Account(accountId, rs.getString("username"), rs.getString("password"));
+                System.out.println("Database - Username: " + account.getUsername());
+                System.out.println("Database - Stored Password: " + storedPassword);
+                System.out.println("Database - Account ID: " + accountId);
+    
+                if (account.getPassword().equals(storedPassword)) {
+                    // Update the accountId of the Account object
+                    account.setAccount_id(accountId);
                     return account;
                 }
             }
-
-        }catch (SQLException e) {
+    
+        } catch (SQLException e) {
             System.out.println(e.getMessage());
-        } 
-        return null; 
+        }
+        return null;
     }
+
+    public Message createMessage(Message message) {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet generatedKeys = null;
+
+        try {
+            connection = ConnectionUtil.getConnection();
+            String sql = "INSERT INTO Message (posted_by, message_text, time_posted_epoch) VALUES (?, ?, ?)";
+            preparedStatement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+            preparedStatement.setInt(1, message.getPosted_by()); // Assuming postedBy is the account_id
+            preparedStatement.setString(2, message.getMessage_text());
+            preparedStatement.setLong(3, message.getTime_posted_epoch());
+
+            int affectedRows = preparedStatement.executeUpdate();
+
+            if (affectedRows == 0) {
+                throw new SQLException("Creating message failed, no rows affected.");
+            }
+
+            generatedKeys = preparedStatement.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                int messageId = generatedKeys.getInt(1);
+                message.setMessage_id(messageId);
+                return message;
+            } else {
+                throw new SQLException("Creating message failed, no ID obtained.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.err.println("Error creating message: " + e.getMessage());
+            return null;
+        } finally {
+            // Close resources in a finally block
+            // (omitting for brevity, but ensure you close resources properly)
+        }
+    }
+
 
 
     public List<Message> getAllMessages()
@@ -214,37 +257,80 @@ public class SocialMediaDAO {
         
     }
 
-    public Message updateMessageText(int messageId, String newMessageText) {
+    public Message updateMessageText(Message message) {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+    
+        try {
+            int messageId = message.getMessage_id();
+            String newMessageText = message.getMessage_text();
+    
+            System.out.println("Updating message with messageId: " + messageId);
+            System.out.println("New message text: " + newMessageText);
+    
+            connection = ConnectionUtil.getConnection();
+            String updateSql = "UPDATE Message SET message_text = ? WHERE message_id = ?";
+            preparedStatement = connection.prepareStatement(updateSql);
+            preparedStatement.setString(1, newMessageText);
+            preparedStatement.setInt(2, messageId);
+    
+            int numberOfUpdatedRows = preparedStatement.executeUpdate();
+    
+            System.out.println("Number of updated rows: " + numberOfUpdatedRows);
+    
+            if (numberOfUpdatedRows != 0) {
+                // After updating, retrieve the updated message details
+                String selectSql = "SELECT message_id, posted_by, message_text, time_posted_epoch FROM Message WHERE message_id = ?";
+                preparedStatement = connection.prepareStatement(selectSql);
+                preparedStatement.setInt(1, messageId);
+    
+                ResultSet resultSet = preparedStatement.executeQuery();
+                if (resultSet.next()) {
+                    System.out.println("Message updated successfully.");
+                    return new Message(
+                        resultSet.getInt("message_id"),
+                        resultSet.getInt("posted_by"),
+                        resultSet.getString("message_text"),
+                        resultSet.getLong("time_posted_epoch")
+                    );
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public List<Message> getMessagesByUserId(int account_id) {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         ResultSet rs = null;
-
+        List<Message> messages = new ArrayList<>();
+    
         try {
             connection = ConnectionUtil.getConnection();
-            String sql = "DELETE FROM message WHERE message_id = ?";
+            String sql = "SELECT * FROM message WHERE posted_by = ?";
             preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setString(1, newMessageText);
-            preparedStatement.setInt(2, messageId);
+            preparedStatement.setInt(1, account_id);
             rs = preparedStatement.executeQuery();
-
-            int numberOfUpdatedRows = preparedStatement.executeUpdate();
-
-            if(numberOfUpdatedRows != 0)
-            {
-                Message message = new Message(rs.getInt("message_id"), rs.getInt("posted_by"), 
-                    rs.getString("message_text"), rs.getLong("time_posted_epoch"));
-
-                return message;
+    
+            while (rs.next()) {
+                Message message = new Message(
+                    rs.getInt("message_id"),
+                    rs.getInt("posted_by"),
+                    rs.getString("message_text"),
+                    rs.getLong("time_posted_epoch")
+                );
+    
+                messages.add(message);
             }
-        }
-            catch(SQLException e){
-                System.out.println(e.getMessage());
-            }
-        
-        return null;
-        
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } 
+    
+        return messages;
     }
-
     
 
 

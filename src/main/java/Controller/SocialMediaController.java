@@ -1,5 +1,7 @@
 package Controller;
 
+import java.util.List;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -48,7 +50,7 @@ public class SocialMediaController {
             //delete message by ID
             app.delete("/messages/{message_id}", this::deleteMessageById);
             //update message text by ID
-            app.patch("mesages/{message_id}", this::updateMessage);
+            app.patch("messages/{message_id}", this::updateMessage);
             //retrieve all messages by user
             app.get("accounts/{account_id}/messages", this::getMessageUser);
 
@@ -86,7 +88,7 @@ public class SocialMediaController {
         Account account = ctx.bodyAsClass(Account.class);
 
         // Assuming socialMediaService.authenticateUser is a method for user authentication
-        Account isAuthenticated = socialMediaService.verify(account.getUsername(), account.getPassword());
+        Account isAuthenticated = socialMediaService.verify(account);
         
         if (isAuthenticated != null) {
             // Authentication successful
@@ -99,7 +101,18 @@ public class SocialMediaController {
 
     private void createMessage(Context ctx)
     {
+        Message message = ctx.bodyAsClass(Message.class);
 
+        Message create = socialMediaService.createMessage(message);
+        
+        if(create != null)
+        {
+            ctx.json(create);
+        }
+        else{
+            ctx.status(400);
+        }
+        
     }
 
     private void getAllMessages(Context ctx)
@@ -144,14 +157,17 @@ public class SocialMediaController {
 
     private void updateMessage(Context ctx)
     {
-        int message_id = Integer.parseInt(ctx.pathParam("message_id"));
-        String newMessageText = ctx.body();
+        Message message = ctx.bodyAsClass(Message.class);
 
-        Message updatedMessage = socialMediaService.updateMessageText(message_id, newMessageText);
-
-        if (updatedMessage != null) {
-            ctx.status(200);
-            ctx.json(socialMediaService.updateMessageText(message_id, newMessageText));
+        // Check if the message and messageId are valid
+        if (message != null) {
+            Message result = socialMediaService.updateMessageText(message);
+    
+            if (result != null) {
+                ctx.json(result);
+            } else {
+                ctx.status(400);
+            }
         } else {
             ctx.status(400);
         }
@@ -160,7 +176,14 @@ public class SocialMediaController {
 
     private void getMessageUser(Context ctx)
     {
+        // Extract the account_id from the context or request parameters
+        int accountId = Integer.parseInt(ctx.pathParam("account_id"));
 
+        // Call the service or DAO method to retrieve messages by user
+        List<Message> userMessages = socialMediaService.getMessageByUser(accountId);
+
+        // Set the HTTP status to 200 (OK) and return the messages as JSON
+        ctx.status(200).json(userMessages);
     }
 
 

@@ -33,14 +33,20 @@ public class SocialMediaService {
         return socialMediaDAO.getAccountById(account_id);
     }
 
-    public Account verify(String username, String password)
+    public Account verify(Account account)
     {
-        System.out.println("Verifying user credentials for username: " + username + password);
-        Account verifiedAccount = socialMediaDAO.verifyUserCredentials(username, password);
-        Account verifAccount = socialMediaDAO.getAccountById(0);
-        System.out.println("Account ID: " + verifAccount);
-        System.out.println("Verification result: " + (verifiedAccount != null ? "Success" : "Failure"));
-        return verifiedAccount;
+        return socialMediaDAO.verifyUserCredentials(account);
+    }
+
+    public Message createMessage(Message message)
+    {
+        Message messages = socialMediaDAO.createMessage(message);
+        if(!message.getMessage_text().isBlank() && message.getMessage_text().length() < 255 
+            && message.getPosted_by() != 0)
+            {
+                return messages;
+            }
+        return null;
     }
 
     public List<Message> getAllMessages() {
@@ -56,8 +62,20 @@ public class SocialMediaService {
         return socialMediaDAO.deleteMessageById(messageId);
     }
 
-    public Message updateMessageText(int messageId, String newMessageText){
-        return socialMediaDAO.updateMessageText(messageId, newMessageText);
+    public Message updateMessageText(Message message) {
+        int messageId = message.getMessage_id();
+        String newMessageText = message.getMessage_text();
+    
+        if (messageId != 0 && newMessageText != null && !newMessageText.isBlank() && newMessageText.length() <= 255) {
+            return socialMediaDAO.updateMessageText(message);
+        }
+    
+        return null;
+    }
+
+    public List<Message> getMessageByUser(int account_id){
+        List<Message> messages = socialMediaDAO.getMessagesByUserId(account_id);
+        return messages;
     }
     
 }
