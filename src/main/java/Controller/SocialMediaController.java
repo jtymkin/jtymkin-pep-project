@@ -3,11 +3,11 @@ package Controller;
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import Model.Account;
 import Model.Message;
-import Service.SocialMediaService;
+import Service.AccountService;
+import Service.MessageService;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 
@@ -25,11 +25,17 @@ public class SocialMediaController {
      */
 
      //dependency
-     SocialMediaService socialMediaService;
+     AccountService accountService;
+     MessageService messageService;
+
+     /**
+     * Constructs a new SocialMediaController and initializes the associated services.
+     */
 
      public SocialMediaController()
      {
-        socialMediaService = new SocialMediaService();
+        accountService = new AccountService();
+        messageService = new MessageService();
      }
 
     public Javalin startAPI() {
@@ -65,131 +71,142 @@ public class SocialMediaController {
         context.json("sample text");
     }
 
-    //handlers
-
-    private void createAccount(Context ctx){
-
+    /**
+     * Handler for creating a new user account.
+     *
+     * @param ctx The context containing the request and response objects.
+     */
+    private void createAccount(Context ctx) {
         Account account = ctx.bodyAsClass(Account.class);
-
-        Account addAccount = socialMediaService.addUser(account);
+        Account addAccount = accountService.addUser(account);
         
-        if(addAccount != null)
-        {
+        if (addAccount != null) {
             ctx.json(addAccount);
+        } else {
+            ctx.status(400); // Bad Request
         }
-        else{
-            ctx.status(400);
-        }
-        
     }
 
-    private void verifyLogin(Context ctx) 
-    {
+    /**
+     * Handler for verifying user login credentials.
+     *
+     * @param ctx The context containing the request and response objects.
+     */
+    private void verifyLogin(Context ctx) {
         Account account = ctx.bodyAsClass(Account.class);
-
-        // Assuming socialMediaService.authenticateUser is a method for user authentication
-        Account isAuthenticated = socialMediaService.verify(account);
+        Account isAuthenticated = accountService.verify(account);
         
         if (isAuthenticated != null) {
-            // Authentication successful
             ctx.json(account);
         } else {
-            // Authentication failed
-            ctx.status(401);
+            ctx.status(401); // Unauthorized
         }
     }
 
-    private void createMessage(Context ctx)
-    {
+    /**
+     * Handler for creating a new message.
+     *
+     * @param ctx The context containing the request and response objects.
+     */
+    private void createMessage(Context ctx) {
         Message message = ctx.bodyAsClass(Message.class);
-
-        Message create = socialMediaService.createMessage(message);
+        Message create = messageService.createMessage(message);
         
-        if(create != null)
-        {
+        if (create != null) {
             ctx.json(create);
+        } else {
+            ctx.status(400); // Bad Request
         }
-        else{
-            ctx.status(400);
-        }
-        
     }
 
-    private void getAllMessages(Context ctx)
-    {
-        ctx.status(200);
-        ctx.json(socialMediaService.getAllMessages());
+    /**
+     * Handler for retrieving all messages.
+     *
+     * @param ctx The context containing the request and response objects.
+     */
+    private void getAllMessages(Context ctx) {
+        ctx.status(200); // OK
+        ctx.json(messageService.getAllMessages());
     }
 
-    private void getMessagesById(Context ctx)
-    {
+    /**
+     * Handler for retrieving a message by its message_id.
+     *
+     * @param ctx The context containing the request and response objects.
+     */
+    private void getMessagesById(Context ctx) {
         int message_id = Integer.parseInt(ctx.pathParam("message_id"));
-
-        Message message = socialMediaService.getMessageById(message_id);
-
-        if(message == null)
-        {
-            ctx.json("");
-        }
-        else{
-        ctx.status(200);
-        ctx.json(socialMediaService.getMessageById(message_id));}
+        Message message = messageService.getMessageById(message_id);
         
-    }
-
-    private void deleteMessageById(Context ctx)
-    {
-        int message_id = Integer.parseInt(ctx.pathParam("message_id"));
-
-        Message message = socialMediaService.getMessageById(message_id);
-
-
-        if(message == null)
-        {
+        if (message == null) {
             ctx.json("");
+        } else {
+            ctx.status(200); // OK
+            ctx.json(message);
         }
-        else{
-            ctx.status(200);
-            ctx.json(socialMediaService.getMessageById(message_id));
-        }
-
     }
 
+    /**
+     * Handler for deleting a message by its message_id.
+     *
+     * @param ctx The context containing the request and response objects.
+     */
+    private void deleteMessageById(Context ctx) {
+        int message_id = Integer.parseInt(ctx.pathParam("message_id"));
+        Message message = messageService.deleteMessageById(message_id);
+
+        if (message == null) {
+            ctx.json("");
+        } else {
+            ctx.status(200); // OK
+            ctx.json(message);
+        }
+    }
+
+    /**
+     * Handler for updating the message text of a message.
+     *
+     * @param ctx The context containing the request and response objects.
+     */
     private void updateMessage(Context ctx) throws JsonProcessingException {
         Message message = ctx.bodyAsClass(Message.class);
         System.out.println("Received Message: " + message);
-    
+
         // Extract messageId from the URL or request parameters
         int messageId;
         try {
-            messageId = Integer.parseInt(ctx.pathParam("message_id")); // Assuming "message_id" is the parameter name
+            messageId = Integer.parseInt(ctx.pathParam("message_id")); 
         } catch (NumberFormatException e) {
-            ctx.status(400); // Invalid message_id in the URL
+            ctx.status(400); // Bad Request - Invalid message_id in the URL
             return;
         }
-    
+
         // Check if the message is valid
         if (message != null) {
             // Update the message text in the database
-            Message result = socialMediaService.updateMessageText(messageId, message.getMessage_text());
-    
+            Message result = messageService.updateMessageText(messageId, message.getMessage_text());
+
             if (result != null) {
                 ctx.json(result);
             } else {
-                ctx.status(400); // Update failed
+                ctx.status(400); // Bad Request - Update failed
             }
         } else {
-            ctx.status(400); // Invalid message in the request body
+            ctx.status(400); // Bad Request - Invalid message in the request body
         }
     }
 
-    private void getMessageUser(Context ctx)
-    {
+    /**
+     * Handler for retrieving messages posted by a user.
+     *
+     * @param ctx The context containing the request and response objects.
+     */
+    private void getMessageUser(Context ctx) {
         // Extract the account_id from the context or request parameters
         int accountId = Integer.parseInt(ctx.pathParam("account_id"));
 
         // Call the service or DAO method to retrieve messages by user
-        List<Message> userMessages = socialMediaService.getMessageByUser(accountId);
+        List<Message> userMessages = messageService.getMessageByUser(accountId);
 
         // Set the HTTP status to 200 (OK) and return the messages as JSON
         ctx.status(200).json(userMessages);
