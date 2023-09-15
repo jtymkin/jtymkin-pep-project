@@ -257,49 +257,44 @@ public class SocialMediaDAO {
         
     }
 
-    public Message updateMessageText(Message message) {
+    public Message updateMessageText(int messageId, String newMessageText) {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
-    
         try {
-            int messageId = message.getMessage_id();
-            String newMessageText = message.getMessage_text();
-    
-            System.out.println("Updating message with messageId: " + messageId);
-            System.out.println("New message text: " + newMessageText);
-    
             connection = ConnectionUtil.getConnection();
-            String updateSql = "UPDATE Message SET message_text = ? WHERE message_id = ?";
-            preparedStatement = connection.prepareStatement(updateSql);
+            // Create a prepared statement with the SQL UPDATE statement
+            String sql = "UPDATE Message SET message_text = ? WHERE message_id = ?";
+            preparedStatement = connection.prepareStatement(sql);
+    
+            // Set the new message_text and message_id in the prepared statement
             preparedStatement.setString(1, newMessageText);
             preparedStatement.setInt(2, messageId);
     
-            int numberOfUpdatedRows = preparedStatement.executeUpdate();
+            // Execute the update
+            int rowsUpdated = preparedStatement.executeUpdate();
     
-            System.out.println("Number of updated rows: " + numberOfUpdatedRows);
+            if (rowsUpdated > 0) {
+                // If the update was successful, fetch the updated message
+                String selectSql = "SELECT * FROM Message WHERE message_id = ?";
+                PreparedStatement selectStatement = connection.prepareStatement(selectSql);
+                selectStatement.setInt(1, messageId);
+                ResultSet resultSet = selectStatement.executeQuery();
     
-            if (numberOfUpdatedRows != 0) {
-                // After updating, retrieve the updated message details
-                String selectSql = "SELECT message_id, posted_by, message_text, time_posted_epoch FROM Message WHERE message_id = ?";
-                preparedStatement = connection.prepareStatement(selectSql);
-                preparedStatement.setInt(1, messageId);
-    
-                ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {
-                    System.out.println("Message updated successfully.");
-                    return new Message(
-                        resultSet.getInt("message_id"),
-                        resultSet.getInt("posted_by"),
-                        resultSet.getString("message_text"),
-                        resultSet.getLong("time_posted_epoch")
-                    );
+                    int updatedMessageId = resultSet.getInt("message_id");
+                    int postedBy = resultSet.getInt("posted_by");
+                    String updatedMessageText = resultSet.getString("message_text");
+                    long timePostedEpoch = resultSet.getLong("time_posted_epoch");
+    
+                    // Create a Message object with the updated values
+                    Message updatedMessage = new Message(updatedMessageId, postedBy, updatedMessageText, timePostedEpoch);
+                    return updatedMessage;
                 }
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-
-        return null;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } 
+        return null; // Update failed or message not found
     }
 
     public List<Message> getMessagesByUserId(int account_id) {

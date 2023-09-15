@@ -155,23 +155,32 @@ public class SocialMediaController {
 
     }
 
-    private void updateMessage(Context ctx)
-    {
+    private void updateMessage(Context ctx) throws JsonProcessingException {
         Message message = ctx.bodyAsClass(Message.class);
-
-        // Check if the message and messageId are valid
+        System.out.println("Received Message: " + message);
+    
+        // Extract messageId from the URL or request parameters
+        int messageId;
+        try {
+            messageId = Integer.parseInt(ctx.pathParam("message_id")); // Assuming "message_id" is the parameter name
+        } catch (NumberFormatException e) {
+            ctx.status(400); // Invalid message_id in the URL
+            return;
+        }
+    
+        // Check if the message is valid
         if (message != null) {
-            Message result = socialMediaService.updateMessageText(message);
+            // Update the message text in the database
+            Message result = socialMediaService.updateMessageText(messageId, message.getMessage_text());
     
             if (result != null) {
                 ctx.json(result);
             } else {
-                ctx.status(400);
+                ctx.status(400); // Update failed
             }
         } else {
-            ctx.status(400);
+            ctx.status(400); // Invalid message in the request body
         }
-
     }
 
     private void getMessageUser(Context ctx)

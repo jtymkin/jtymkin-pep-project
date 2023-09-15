@@ -62,15 +62,13 @@ public class SocialMediaService {
         return socialMediaDAO.deleteMessageById(messageId);
     }
 
-    public Message updateMessageText(Message message) {
-        int messageId = message.getMessage_id();
-        String newMessageText = message.getMessage_text();
-    
-        if (messageId != 0 && newMessageText != null && !newMessageText.isBlank() && newMessageText.length() <= 255) {
-            return socialMediaDAO.updateMessageText(message);
+    public Message updateMessageText(int messageId, String newMessageText) {
+        // Check if the new message_text is not blank and not over 255 characters
+        if (newMessageText != null && !newMessageText.isEmpty() && newMessageText.length() < 255) {
+            return socialMediaDAO.updateMessageText(messageId, newMessageText);
+        } else {
+            return null; // Invalid new message_text
         }
-    
-        return null;
     }
 
     public List<Message> getMessageByUser(int account_id){
